@@ -94,10 +94,28 @@
         #ai-chat-history {
             flex-grow: 1;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
         .scrollable-content {
             max-height: 60vh;
             overflow-y: auto;
+        }
+        .capability-table th, .capability-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .capability-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+        .capability-table ul {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+        .capability-table li {
+            margin-bottom: 0.25rem;
         }
     </style>
 </head>
@@ -470,10 +488,35 @@
                                 Start Here: Read First
                             </button>
                         </div>
-                        <div class="space-y-8">
+                        <div class="space-y-12">
                             <div>
                                 <h2 class="text-3xl font-bold text-gray-800 mb-3">Core Concepts: The Foundations of Ethical Navigation</h2>
                                 <p class="text-lg text-gray-600">This toolkit is built on a few key ideas. Understanding them will help you get the most out of the simulator and labs. The main goal is not to agree on everything, but to build your **capability** to coordinate with others who see the world differently.</p>
+                            </div>
+                            <!-- NEW: From Theories to Capabilities -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-2">From Theories to Capabilities</h3>
+                                <p class="text-gray-700 mb-4">While the four ethical lenses (Virtue, Duty, etc.) seem different, they are all trying to build a common set of core human capabilities for ethical action. This table acts as a "Rosetta Stone," translating abstract theories into the concrete skills you are developing throughout this toolkit. The goal is **Capability-Based Coordination**—learning to work with others even when you have different beliefs.</p>
+                                <div class="overflow-x-auto rounded-lg border">
+                                    <table class="w-full text-sm capability-table">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="text-blue-600">Virtue Ethics</th>
+                                                <th class="text-red-600">Deontology (Duty)</th>
+                                                <th class="text-green-600">Consequentialism</th>
+                                                <th class="text-purple-600">Care Ethics</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white">
+                                            <tr>
+                                                <td><ul><li>Practical Reason</li><li>Moral Attention</li><li>Self-Regulation</li><li>Empathy</li><li>Resilience</li><li>Reflective Learning</li></ul></td>
+                                                <td><ul><li>Rule Recognition</li><li>Universalizability Assessment</li><li>Respect for Persons</li><li>Duty Compliance</li><li>Error Detection</li><li>Reflective Capacity</li></ul></td>
+                                                <td><ul><li>Outcome Awareness</li><li>Impact Assessment</li><li>Perspective-Taking</li><li>Comparative Reasoning</li><li>Feedback Integration</li><li>Error Correction</li></ul></td>
+                                                <td><ul><li>Attentive Perception</li><li>Relational Understanding</li><li>Responsiveness</li><li>Empathy</li><li>Practical Skill</li><li>Accountability</li></ul></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                             <!-- BROA Filter -->
                             <div>
@@ -697,7 +740,14 @@
                     const caseData = caseStudies[this.currentCaseKey];
                     const studentWork = JSON.parse(localStorage.getItem(this.storageKey) || '{}')[this.currentCaseKey] || {};
                     const prompt = `
-                        Act as a Socratic tutor providing feedback on a student's ethical analysis.
+                        Act as a Socratic tutor providing feedback on a student's ethical analysis. Your goal is to help them develop their **core coordination capabilities**.
+                        
+                        **Core Capabilities Reference:**
+                        - **Virtue Ethics:** Practical Reason, Moral Attention, Self-Regulation, Empathy, Resilience, Reflective Learning.
+                        - **Deontology (Duty):** Rule Recognition, Universalizability Assessment, Respect for Persons, Duty Compliance, Error Detection, Reflective Capacity.
+                        - **Consequentialism:** Outcome Awareness, Impact Assessment, Perspective-Taking, Comparative Reasoning, Feedback Integration, Error Correction.
+                        - **Care Ethics:** Attentive Perception, Relational Understanding, Responsiveness, Empathy, Practical Skill, Accountability.
+
                         The student was presented with the following dilemma: "${caseData.labText}"
                         Here is the student's analysis:
                         - Initial Perception: ${studentWork.perceptionCheck || "No input."}
@@ -705,15 +755,12 @@
                         - Duty Lens: ${studentWork.deontology || "No input."}
                         - Consequence Lens: ${studentWork.consequentialism || "No input."}
                         - Care Lens: ${studentWork.care || "No input."}
-                        - Alignment: ${studentWork.alignment || "No input."}
-                        - Tension: ${studentWork.tension || "No input."}
-                        - Integration: ${studentWork.integration || "No input."}
-                        - Constructor Ideas: ${studentWork.constructorSolution || "No input."}
+                        - Integration & Constructor Ideas: ${studentWork.integration || "No input."} ${studentWork.constructorSolution || "No input."}
 
-                        Your task is to provide constructive, non-judgmental feedback. Do NOT give a "correct" answer. Instead, help the student think more deeply. Start by acknowledging their perception check. Then, structure your feedback with the following sections:
-                        **What's Working Well:** Briefly praise one or two aspects of their analysis that are strong.
-                        **Areas for Deeper Reflection:** Ask 2-3 specific, probing questions that challenge their assumptions or encourage them to explore underdeveloped areas of their analysis.
-                        **Expanding Your Constructor Thinking:** Provide one question or idea to help them push their innovative solutions even further.
+                        Your task is to provide constructive, capability-focused feedback. Structure your response with the following sections:
+                        **Capability Demonstrated:** Identify and praise one specific capability the student demonstrated well in their analysis. For example, "In your Care Ethics analysis, you showed strong **attentive perception** by focusing on the most vulnerable stakeholders."
+                        **Capability to Develop:** Suggest one specific capability for the student to develop further and ask a probing question to guide them. For example, "To strengthen your Consequentialist analysis, try practicing your **impact assessment** capability. Who else, beyond the obvious groups, might be affected by this decision in the long run?"
+                        **Expanding Your Constructor Thinking:** Provide one question that encourages them to think about what new capabilities the stakeholders in their solution would need to develop to make it successful.
                     `;
                     const resultElement = this.container.querySelector('#feedback-result-area');
                     callGeminiAPI(prompt, resultElement);
@@ -896,29 +943,24 @@
                                 </div>
                             </div>
 
-                             <!-- Reasoning with Emotion, Identity, and Context -->
+                             <!-- NEW: Capability Challenges -->
                             <div>
-                                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Reasoning with Emotion, Identity, and Context</h3>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Capability Challenges</h3>
                                 <div class="p-6 bg-gray-50 rounded-lg border space-y-6">
-                                    <p class="text-gray-700">Real ethical reasoning is not a sterile, purely logical process. It's shaped by who you are. Instead of ignoring these factors, a strong reasoner integrates them consciously. Try these reflective exercises:</p>
+                                    <p class="text-gray-700">Strengthen the specific skills that underpin all ethical frameworks with these targeted exercises.</p>
                                     <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-                                        <h4 class="font-bold text-red-800">Activity: Emotion as a Spotlight</h4>
-                                        <p class="text-red-900 mb-3">Your feelings (anger, empathy, disgust) are not the enemy of reason; they are a spotlight telling you what matters. Consider the statement below:</p>
-                                        <p class="italic p-3 bg-white rounded-md">"It's outrageous that they're cutting funding for the arts program!"</p>
-                                        <label for="emotion-value" class="block font-semibold my-3">What core value might this emotion be trying to protect? (e.g., Creativity, Community, Education)</label>
-                                        <input type="text" id="emotion-value" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Type the value here...">
-                                        <button id="emotion-feedback-btn" class="mt-3 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Get Feedback</button>
-                                        <div id="emotion-feedback-area" class="mt-3"></div>
+                                        <h4 class="font-bold text-red-800">Challenge: Universalizability Assessment (Deontology)</h4>
+                                        <p class="text-red-900 mb-3">Consider the act of making a promise you don't intend to keep to get a loan. Could you will this to be a universal law for everyone? Explain why or why not.</p>
+                                        <textarea id="universal-challenge-input" class="w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="If everyone made false promises..."></textarea>
+                                        <button id="universal-feedback-btn" class="mt-3 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Get Feedback</button>
+                                        <div id="universal-feedback-area" class="mt-3"></div>
                                     </div>
-                                    <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                        <h4 class="font-bold text-indigo-800">Activity: Identity as a Filter</h4>
-                                        <p class="text-indigo-900 mb-3">Your standpoint and life experiences shape what seems "reasonable." Consider the debate around student loan forgiveness. Briefly describe how these two standpoints might change what seems fair:</p>
-                                        <label for="identity-filter-1" class="block font-semibold my-3">1. A recent graduate with $100,000 in student debt:</label>
-                                        <textarea id="identity-filter-1" class="w-full p-2 border border-gray-300 rounded-md" rows="2" placeholder="From this standpoint, fairness might look like..."></textarea>
-                                        <label for="identity-filter-2" class="block font-semibold my-3">2. A taxpayer who paid off their loans years ago:</label>
-                                        <textarea id="identity-filter-2" class="w-full p-2 border border-gray-300 rounded-md" rows="2" placeholder="From this standpoint, fairness might look like..."></textarea>
-                                        <button id="identity-feedback-btn" class="mt-3 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Get Feedback</button>
-                                        <div id="identity-feedback-area" class="mt-3"></div>
+                                    <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                                        <h4 class="font-bold text-purple-800">Challenge: Empathy & Perspective-Taking (Shared)</h4>
+                                        <p class="text-purple-900 mb-3">A new high-speed train is planned that will run through a historic neighborhood. Briefly describe the conflict from two perspectives: a city planner focused on economic growth, and a long-time resident of the neighborhood.</p>
+                                        <textarea id="empathy-challenge-input" class="w-full p-2 border border-gray-300 rounded-md" rows="4" placeholder="The city planner sees... The resident feels..."></textarea>
+                                        <button id="empathy-feedback-btn" class="mt-3 bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Get Feedback</button>
+                                        <div id="empathy-feedback-area" class="mt-3"></div>
                                     </div>
                                 </div>
                             </div>
@@ -980,29 +1022,44 @@
                 }
 
                 addReasoningFeedbackListeners() {
-                    this.container.querySelector('#emotion-feedback-btn').addEventListener('click', () => {
-                        const input = this.container.querySelector('#emotion-value').value;
-                        if (!input) { alert('Please enter a value.'); return; }
-                        const prompt = `A student was asked to identify the core value being protected by the emotional statement: "It's outrageous that they're cutting funding for the arts program!" The student suggested the value is "${input}". Act as a tutor. Briefly affirm their answer if it's reasonable (like creativity, community, education) and then ask one Socratic question to get them to think more deeply about the connection between emotions and values.`;
-                        callGeminiAPI(prompt, this.container.querySelector('#emotion-feedback-area'));
+                    // New listener for Universalizability Challenge
+                    this.container.querySelector('#universal-feedback-btn').addEventListener('click', () => {
+                        const input = this.container.querySelector('#universal-challenge-input').value;
+                        if (!input.trim()) { 
+                            this.container.querySelector('#universal-feedback-area').innerHTML = `<p class="text-yellow-700 font-semibold">Please enter your reasoning first.</p>`;
+                            return; 
+                        }
+                        const prompt = `A student is practicing the "Universalizability Assessment" capability. They were asked to consider if making a false promise could be a universal law.
+                        Student's reasoning: "${input}"
+                        Act as a Socratic tutor. Briefly affirm their reasoning if it's on the right track (e.g., correctly identifies the contradiction). Then, ask one probing question to deepen their understanding of why universalizability is a key test for a moral rule in deontology.`;
+                        callGeminiAPI(prompt, this.container.querySelector('#universal-feedback-area'));
                     });
 
-                    this.container.querySelector('#identity-feedback-btn').addEventListener('click', () => {
-                        const input1 = this.container.querySelector('#identity-filter-1').value;
-                        const input2 = this.container.querySelector('#identity-filter-2').value;
-                        if (!input1 || !input2) { alert('Please fill out both standpoint descriptions.'); return; }
-                        const prompt = `A student is analyzing how standpoint affects perception of fairness regarding student loan forgiveness.
-                        - Standpoint 1 (Recent grad with debt): "${input1}"
-                        - Standpoint 2 (Taxpayer who paid off loans): "${input2}"
-                        Act as a tutor. Briefly affirm that they've captured the difference well. Then, ask one Socratic question to prompt them to think about how these two different, reasonable perspectives could be brought into a productive dialogue.`;
-                        callGeminiAPI(prompt, this.container.querySelector('#identity-feedback-area'));
+                    // New listener for Empathy Challenge
+                    this.container.querySelector('#empathy-feedback-btn').addEventListener('click', () => {
+                        const input = this.container.querySelector('#empathy-challenge-input').value;
+                        if (!input.trim()) {
+                            this.container.querySelector('#empathy-feedback-area').innerHTML = `<p class="text-yellow-700 font-semibold">Please describe the two perspectives first.</p>`;
+                            return; 
+                        }
+                        const prompt = `A student is practicing the "Empathy/Perspective-Taking" capability. They were asked to describe a conflict over a new train line from the perspective of a city planner and a resident.
+                        Student's description: "${input}"
+                        Act as a Socratic tutor. Briefly praise their ability to see both sides. Then, ask one probing question that encourages them to think about how these two valid but conflicting perspectives could find common ground or a way to coordinate.`;
+                        callGeminiAPI(prompt, this.container.querySelector('#empathy-feedback-area'));
                     });
                 }
 
                 renderFallacyGame() {
                     const gameContainer = this.container.querySelector('#fallacy-game-container');
                     const fallacy = this.fallacies[this.currentFallacyIndex];
-                    const options = this.shuffle([...this.fallacies]).map(f => f.name);
+                    // Ensure we have at least 4 unique options for the game
+                    let options = [fallacy.name];
+                    let otherFallacies = this.fallacies.filter(f => f.name !== fallacy.name);
+                    this.shuffle(otherFallacies);
+                    for(let i=0; i < 3 && i < otherFallacies.length; i++){
+                        options.push(otherFallacies[i].name);
+                    }
+                    options = this.shuffle(options);
 
                     gameContainer.innerHTML = `
                         <p class="text-lg italic text-gray-800 mb-4">" ${fallacy.example} "</p>
