@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethical Navigator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .highlight {
+            background-color: rgba(255, 229, 100, 0.7);
+            padding: 2px 1px;
+            border-radius: 3px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .lens-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .nav-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-btn.active {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+        .worksheet-textarea {
+            transition: border-color 0.2s;
+        }
+        .worksheet-textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: white; padding: 2rem; border-radius: 0.75rem;
+            max-width: 600px; width: 90%; transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .loader {
+            border: 4px solid #f3f3f3; border-top: 4px solid #3498db;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .fallacy-option-btn {
+            transition: background-color 0.2s;
+        }
+        .fallacy-option-btn.correct {
+            background-color: #10B981; /* Tailwind green-500 */
+            color: white;
+        }
+        .fallacy-option-btn.incorrect {
+            background-color: #EF4444; /* Tailwind red-500 */
+            color: white;
+        }
+        /* AI Tutor Styles */
+        #ai-tutor-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 999;
+        }
+        #ai-tutor-modal .modal-content {
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+        #ai-chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .scrollable-content {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="max-w-5xl mx-auto my-8 p-4 sm:p-8 bg-white rounded-2xl shadow-2xl">
+
+        <!-- Header -->
+        <header class="text-center mb-6 border-b pb-4 relative">
+            <h1 class="text-4xl font-bold text-gray-900">The Ethical Navigator</h1>
+            <p class="text-lg text-gray-600 mt-2">A toolkit for critical ethical thinking.</p>
+            <button id="settings-btn" class="absolute top-0 right-0 p-2 rounded-full hover:bg-gray-200 transition-colors" title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex flex-col sm:flex-row justify-center mb-8 bg-gray-200 p-2 rounded-lg">
+            <button class="nav-btn flex-1 py-2 px-4 rounded-md font-semibold" data-view="foundations-view">0. Foundations</button>
+            <button class="nav-btn flex-1 py-2 px-4 rounded-md font-semibold" data-view="simulator-view">1. Filter Simulator</button>
+            <button class="nav-btn flex-1 py-2 px-4 rounded-md font-semibold" data-view="lab-view">2. Triangulation Lab</button>
+            <button class="nav-btn flex-1 py-2 px-4 rounded-md font-semibold" data-view="sandbox-view">3. Constructor Sandbox</button>
+            <button class="nav-btn flex-1 py-2 px-4 rounded-md font-semibold" data-view="toolkit-view">4. Reasoning Toolkit</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main>
+            <div id="foundations-view" class="view"></div>
+            <div id="simulator-view" class="view"></div>
+            <div id="lab-view" class="view"></div>
+            <div id="sandbox-view" class="view"></div>
+            <div id="toolkit-view" class="view"></div>
+        </main>
+    </div>
+
+    <!-- AI Tutor Button -->
+    <button id="ai-tutor-button" class="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 2a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 003 15h14a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+        </svg>
+    </button>
+
+    <!-- Modals -->
+    <div id="start-here-modal" class="modal-overlay">
+        <div class="modal-content shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Welcome to the Ethical Navigator!</h2>
+            <div class="scrollable-content text-gray-700 p-4 bg-gray-50 rounded-lg border">
+                <p class="mb-4">This toolkit is designed for deep, personal reflection. Before you begin, please understand how it works and how your privacy is protected.</p>
+                
+                <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-800">1. Your Work is Private</h3>
+                <p>All the text you enter into the worksheets is saved **directly in your browser's local storage**. It is not sent to any server, and it is not visible to anyone else, including your instructor or the creators of this tool. To resume your work, you must use the same computer and browser.</p>
+                
+                <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-800">2. How the AI Features Work</h3>
+                <p>To use the AI feedback features and the AI Tutor, you must provide your own Google AI API key. You can get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a>. Click the **gear icon (⚙️)** in the top right corner to enter and save your key.</p>
+                <p class="mt-2">When you request feedback, the text from the relevant fields is sent to Google's servers to be processed. **This interaction is stateless; your data is not stored or used to train the model.**</p>
+
+                <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-800">3. Using the AI Tutor</h3>
+                <p>The floating lightbulb button (💡) opens the AI Tutor. It's context-aware, meaning its primary goal is to help you with the specific module you are currently viewing. After its first response, it will invite you to ask follow-up questions to see how the current topic connects to the bigger picture and other modules in the app.</p>
+                
+                <p class="mt-6 font-semibold">By using this tool, you acknowledge this process. We hope it provides a valuable space for your growth and self-discovery.</p>
+            </div>
+            <div class="text-center mt-6">
+                <button id="close-start-here-btn" class="modal-close-btn bg-blue-600 text-white font-semibold py-2 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-colors">I Understand</button>
+            </div>
+        </div>
+    </div>
+    <div id="api-key-modal" class="modal-overlay">
+        <div class="modal-content shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">AI Settings</h2>
+            <p class="text-gray-700 mb-4">To enable the AI features, please provide your Google AI API key. Your key is saved securely in your browser's local storage and is never shared.</p>
+            <div>
+                <label for="api-key-input" class="block text-sm font-medium text-gray-700">Google AI API Key</label>
+                <input type="password" id="api-key-input" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <p class="text-sm text-gray-500 mt-2">You can get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a>.</p>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button class="modal-close-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="save-api-key-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700">Save Key</button>
+            </div>
+        </div>
+    </div>
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content shadow-2xl max-w-sm">
+            <h2 id="confirm-modal-title" class="text-xl font-bold text-gray-900 mb-4">Are you sure?</h2>
+            <p id="confirm-modal-message" class="text-gray-700 mb-6">This action cannot be undone.</p>
+            <div class="flex justify-end space-x-3">
+                <button id="confirm-cancel-btn" class="modal-close-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="confirm-ok-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <div id="ai-tutor-modal" class="modal-overlay">
+        <div class="modal-content shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">AI Tutor</h2>
+            <div id="ai-chat-history" class="p-4 bg-gray-100 rounded-lg border mb-4">
+                <!-- Chat history will be appended here -->
+            </div>
+            <div id="ai-tutor-input-area" class="flex space-x-2">
+                <input type="text" id="ai-tutor-input" class="flex-grow p-2 border border-gray-300 rounded-lg" placeholder="Ask a question about the current topic...">
+                <button id="ai-tutor-send-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- GLOBAL STATE & ELEMENTS ---
+            const views = document.querySelectorAll('.view');
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const foundationsView = document.getElementById('foundations-view');
+            const simulatorView = document.getElementById('simulator-view');
+            const labView = document.getElementById('lab-view');
+            const sandboxView = document.getElementById('sandbox-view');
+            const toolkitView = document.getElementById('toolkit-view');
+            const settingsBtn = document.getElementById('settings-btn');
+            const apiKeyModal = document.getElementById('api-key-modal');
+            const confirmModal = document.getElementById('confirm-modal');
+            const startHereModal = document.getElementById('start-here-modal');
+            const apiKeyInput = document.getElementById('api-key-input');
+            const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+            const aiTutorButton = document.getElementById('ai-tutor-button');
+            const aiTutorModal = document.getElementById('ai-tutor-modal');
+            const aiTutorInput = document.getElementById('ai-tutor-input');
+            const aiTutorSendBtn = document.getElementById('ai-tutor-send-btn');
+            const aiChatHistory = document.getElementById('ai-chat-history');
+            
+            // --- DATA STORE ---
+            const caseStudies = {
+                animalWelfare: {
+                    title: "Animal Welfare",
+                    simulatorText: `Consider the ethical question of how humans should treat nonhuman animals. A <strong>Virtue Ethics</strong> approach focuses on virtues like <strong>compassion</strong> and <strong>responsibility</strong> toward animals, asking what kind of <strong>person</strong> would cause unnecessary <strong>suffering</strong>. It views <strong>kindness</strong> to animals as developing <strong>character</strong> traits that benefit human relationships. A <strong>Deontological</strong> approach examines whether animals have inherent <strong>rights</strong> that create <strong>duties</strong> for humans. It questions whether causing animal suffering violates a universal <strong>moral law</strong> and considers whether treating animals as mere resources fails to <strong>respect</strong> their <strong>intrinsic value</strong>. A <strong>Consequentialist</strong> approach calculates the total <strong>suffering</strong> caused by animal agriculture and experimentation, weighing it against human <strong>benefits</strong>. This lens focuses on the <strong>outcomes</strong> and may use <strong>quantitative</strong> assessments of pain across species. Finally, a <strong>Care Ethics</strong> approach emphasizes the actual <strong>relationships</strong> between humans and other animals. It attends to particular animals' <strong>needs</strong> and <strong>vulnerabilities</strong>, focusing on <strong>emotional connections</strong> and <strong>empathy</strong> across species.`,
+                    labText: "A pharmaceutical company has developed a promising new drug that could save thousands of human lives, but its final testing phase requires using 100 chimpanzees. The testing will cause the animals significant distress and will be fatal. Without this test, the drug cannot be approved for human use. You are the head of the ethics committee that must approve or deny this final test.",
+                    constructorPrompt: "The choice seems to be a tragic trade-off. A constructor approach asks: How could we redesign the testing process itself? Brainstorm alternatives like advanced computer modeling, 'organ-on-a-chip' technology, or a phased human trial with volunteers. How could you create a new option that escapes the initial dilemma?",
+                    lenses: {
+                        virtue: { name: "Virtue Ethics", question: "What kind of person should I become?", keywords: ['compassion', 'responsibility', 'person', 'kindness', 'character'], color: 'blue', strength: "Connects the issue to personal character, making it deeply motivating.", weakness: "Can be vague; what one culture sees as a 'virtue' may differ, offering no clear policy guidance." },
+                        deontology: { name: "Deontology", question: "What actions are required or prohibited by moral law?", keywords: ['rights', 'duties', 'moral law', 'respect', 'intrinsic value'], color: 'red', strength: "Provides a strong, principled foundation for animal rights, regardless of human benefit.", weakness: "Can be rigid and struggles to resolve conflicting duties (e.g., medical testing to save human lives)." },
+                        consequentialism: { name: "Consequentialism", question: "What action will produce the best overall results?", keywords: ['suffering', 'benefits', 'outcomes', 'quantitative'], color: 'green', strength: "Focuses on the real-world, large-scale impact of actions on animal suffering.", weakness: "Can justify harming a few for the benefit of many; accurately calculating 'total happiness' is nearly impossible." },
+                        care: { name: "Care Ethics", question: "How should I respond to the needs of those in relationship with me?", keywords: ['relationships', 'needs', 'vulnerabilities', 'emotional connections', 'empathy'], color: 'purple', strength: "Grounds ethics in the real, emotional connections people have with animals.", weakness: "May create bias towards animals we have relationships with (like pets) over those we don't (like insects)." }
+                    },
+                    demonstration: {
+                        perceptionCheck: "My immediate gut reaction is a strong feeling of discomfort and sadness for the chimpanzees. This likely stems from the 'Care/Harm' moral foundation. As someone with pets, my standpoint makes me sensitive to animal suffering. I feel a tension between this and the abstract idea of saving human lives.",
+                        virtue: "A virtuous committee would act with both compassion for the animals and responsibility for human well-being. The decision reflects our character: are we people who cause suffering for our own benefit, even if that benefit is great? A person of integrity would struggle with this, seeking a path that doesn't require such a direct trade-off.",
+                        deontology: "The core duty conflict is between the duty to prevent human death and the duty not to cause harm to sentient beings. Do chimpanzees have a right not to be used as a means to an end, even a life-saving one? A strict deontological view might say that intentionally harming the chimpanzees is a violation of a moral rule that cannot be justified by the consequences.",
+                        consequentialism: "The analysis is a stark calculation: the suffering and death of 100 chimpanzees versus the potential saving of thousands of human lives. From a purely utilitarian perspective that prioritizes human well-being, approving the test seems to produce the greatest good for the greatest number. However, this ignores the severity of the animals' suffering.",
+                        care: "This lens focuses on the vulnerability of the chimpanzees, who are powerless in this situation. It also considers our relationship to them as fellow primates. A care-based response would be deeply uncomfortable with causing such direct harm and would seek to understand the specific needs and suffering of the animals involved.",
+                        alignment: "All lenses acknowledge the gravity of the situation. They align on the fact that causing the chimpanzees' suffering is a significant moral harm that requires justification. No lens treats this as an easy or trivial decision.",
+                        tension: "The primary tension is between deontology (the rule against harming) and consequentialism (the outcome of saving lives). Care ethics also creates tension by making the suffering of the animals emotionally salient, pushing back against a cold utilitarian calculation.",
+                        integration: "An integrated approach would approve the test but only under strict, non-negotiable conditions. It would require that the test be the absolute last resort, with all other alternatives exhausted. It would mandate the most humane treatment possible, and a commitment from the company to fund the development of non-animal testing alternatives for the future.",
+                        constructorSolution: "Instead of a simple yes/no, we could propose a 'conditional approval with required innovation.' The test is approved, but the company must invest 10% of the drug's first-year profits into a research fund dedicated to ending primate testing. This creates a new path that saves lives now while building a system where this dilemma is less likely to occur in the future."
+                    }
+                },
+                healthcareAccess: {
+                    title: "Healthcare Access",
+                    simulatorText: `Imagine a rural hospital facing closure due to financial pressures. A <strong>Virtue Ethics</strong> approach focuses on virtues like <strong>care</strong>, <strong>justice</strong>, and <strong>integrity</strong> in healthcare provision. It asks what kind of <strong>community</strong> we become when healthcare is restricted. A <strong>Deontological</strong> approach examines whether healthcare is a universal <strong>right</strong> or a market good, questioning whether denying care violates human <strong>dignity</strong> and considering our <strong>duties</strong> to provide basic care. A <strong>Consequentialist</strong> approach calculates the healthcare <strong>outcomes</strong>, weighing the <strong>benefits</strong> of keeping the hospital open against the financial <strong>costs</strong>, perhaps using metrics like <strong>population health</strong>. Finally, a <strong>Care Ethics</strong> approach emphasizes the concrete <strong>relationships</strong> between providers and <strong>patients</strong>, attending to the particular <strong>vulnerabilities</strong> of rural residents and focusing on <strong>responsive care</strong>.`,
+                    labText: "A rural hospital, the only one for 50 miles, is losing money and facing closure. Keeping it open will require a significant tax increase for the small, mostly low-income community. Closing it would save money but force residents to travel hours for emergency care, likely resulting in worse health outcomes. You are a town council member who must vote on the tax increase.",
+                    constructorPrompt: "The binary choice between 'crippling taxes' and 'no healthcare' is flawed. A constructor approach asks: How can we redesign healthcare delivery for this community? Brainstorm new models. Could the town fund a smaller, specialized emergency clinic with telemedicine support? Could they subsidize a rapid transport service or incentivize a rotating group of doctors to serve the area?",
+                    lenses: {
+                        virtue: { name: "Virtue Ethics", question: "What kind of community should we become?", keywords: ['care', 'justice', 'integrity', 'community'], color: 'blue', strength: "Frames the debate around collective identity and responsibility, inspiring shared action.", weakness: "Lacks a clear mechanism for making tough resource allocation decisions." },
+                        deontology: { name: "Deontology", question: "What are our duties and what rights must be protected?", keywords: ['right', 'dignity', 'duties'], color: 'red', strength: "Provides a powerful, rights-based argument for universal access based on human dignity.", weakness: "Struggles to address the practical limits of resources and resolve conflicting rights." },
+                        consequentialism: { name: "Consequentialism", question: "What decision will lead to the best overall health outcomes?", keywords: ['outcomes', 'benefits', 'costs', 'population health'], color: 'green', strength: "Allows for an evidence-based analysis of which system produces the most good for the most people.", weakness: "Risks devaluing individuals by prioritizing population metrics over personal needs." },
+                        care: { name: "Care Ethics", question: "How can we best care for the vulnerable in our community?", keywords: ['relationships', 'patients', 'vulnerabilities', 'responsive care'], color: 'purple', strength: "Focuses attention on the most vulnerable and the crucial provider-patient relationship.", weakness: "Can be difficult to scale from individual relationships to a fair system for an entire population." }
+                    },
+                    demonstration: {
+                        perceptionCheck: "My first feeling is anxiety for the community. The 'Fairness' and 'Care' foundations are activated. My standpoint as a decision-maker (a council member) makes me feel the weight of responsibility for the vulnerable. The situation feels like a trap with no good options.",
+                        virtue: "What kind of community do we want to be? A virtuous community is just and compassionate. Voting to close the hospital, while financially prudent, might reflect a lack of care for our most vulnerable neighbors. A courageous decision might involve finding a third way that reflects the character we aspire to.",
+                        deontology: "Access to emergency healthcare can be framed as a basic human right, essential for dignity. As a council member, I have a duty to protect the well-being of all citizens. Voting to close the hospital could be seen as a dereliction of that duty, treating the health of rural residents as less important than the town's budget.",
+                        consequentialism: "Closing the hospital saves money immediately, preventing a tax hike on a low-income population. However, the long-term consequences could be disastrous: preventable deaths, families moving away, and a decline in the town's vitality. The total harm of closing likely outweighs the short-term financial benefit.",
+                        care: "This lens focuses on the concrete relationships and vulnerabilities at stake. I must consider the fear of an elderly person living alone, or a parent with a sick child, now hours from a doctor. My decision must be responsive to these specific, tangible needs, not just abstract budget numbers.",
+                        alignment: "All four lenses point toward the conclusion that simply closing the hospital is an ethically poor option. They align on the moral importance of providing care and protecting the community's vulnerable members.",
+                        tension: "The main tension is between the consequentialist harm of a large tax increase on a poor community and the deontological duty to provide access to life-saving care. Both options produce a negative outcome for someone.",
+                        integration: "An integrated approach must reject the 'all or nothing' choice. It would acknowledge the duty to provide care while also taking the financial consequences seriously. This means not just voting 'yes' or 'no' on the tax, but proposing a motion to explore alternative, scaled-down models of care.",
+                        constructorSolution: "I would vote 'no' on the current tax proposal, but immediately introduce a motion to form a task force to design a 'Community Health Hub.' This would not be a full hospital, but a publicly funded emergency clinic with 24/7 telemedicine links to a larger hospital, a subsidized ambulance service, and a focus on preventative care. This creates a new, more sustainable option."
+                    },
+                    sandboxDemonstration: {
+                        see: "The system presents a binary choice: either raise taxes on a low-income community or close the only hospital for 50 miles. Stakeholders include: rural residents (especially elderly and families), the town council, hospital employees, and taxpayers. The core constraint is financial unsustainability.",
+                        analyze: "Stakeholders: Residents (need care), Council (fiscal duty), Employees (jobs), Taxpayers (financial burden).\nBeneficiaries/Harmed: Keeping it open harms taxpayers. Closing it harms residents and employees.\nRoot Cause: Why is it failing? Low patient volume/insurance reimbursement. Why? High overhead of a full-service hospital model. Why? The model is designed for urban density, not rural needs.",
+                        generate: "Instead of a full hospital, create a 'Community Health Hub.' This could include: 1) A 24/7 emergency stabilization clinic with telemedicine links to a city hospital. 2) A subsidized high-speed ambulance service. 3) A focus on preventative care and mobile health visits to reduce emergency needs. 4) Incentives for a rotating group of doctors.",
+                        experiment: "Pilot Idea: For 3 months, replace the full ER with a telemedicine-supported urgent care clinic, while putting the ambulance service on standby. \nSuccess Metric: Track patient outcomes, average wait times for tele-consults, and transport times. Survey community trust and satisfaction. \nContingency Plan: If outcomes worsen, we can revert while using the data to apply for state-level emergency funding, now with clear evidence of need."
+                    }
+                },
+                aiBias: {
+                    title: "AI & Algorithmic Bias",
+                    simulatorText: `A company develops an AI to screen job applicants. It learns from historical data and inadvertently penalizes candidates from non-traditional backgrounds. A <strong>Virtue Ethics</strong> approach asks what virtues, such as <strong>fairness</strong> and <strong>diligence</strong>, the AI's designers should embody. It questions the <strong>character</strong> of a company that deploys a biased tool. A <strong>Deontological</strong> approach focuses on the <strong>duty</strong> to provide equal opportunity and whether the AI violates the fundamental <strong>right</strong> to be judged on individual merit, not group affiliation, thereby failing to treat all candidates with <strong>respect</strong>. A <strong>Consequentialist</strong> approach analyzes the large-scale <strong>harms</strong> of reinforcing societal biases versus the <strong>efficiency</strong> benefits of automated screening. It measures the <strong>impact</strong> on diversity and social mobility. A <strong>Care Ethics</strong> approach highlights the specific <strong>vulnerability</strong> of job applicants and the power imbalance in the hiring <strong>relationship</strong>. It asks how the company can be more <strong>responsive</strong> to the <strong>needs</strong> of those unfairly disadvantaged by its system.`,
+                    labText: "Your company has deployed a new AI to screen job applicants, which has dramatically sped up hiring. However, you discover that the AI is systematically ranking female candidates lower than male candidates for technical roles, even when they have similar qualifications, because it was trained on decades of biased historical hiring data. Pulling the system offline would cause major delays and costs, but leaving it active continues to perpetuate unfairness. You are the project manager who must recommend a course of action to senior leadership.",
+                    constructorPrompt: "The choice isn't just 'use the biased AI' or 'go back to the slow, old way.' A constructor approach asks: How can we transform the hiring system to be both efficient AND fair? Brainstorm ideas. Could you use the AI for initial screening but require a human review for all rejected female candidates? Could you invest in 'explainable AI' to identify and remove the specific biased variables?",
+                     lenses: {
+                        virtue: { name: "Virtue Ethics", question: "What virtues should guide the creation and use of technology?", keywords: ['fairness', 'diligence', 'character'], color: 'blue', strength: "Focuses on the moral responsibility and integrity of the creators and users of the AI.", weakness: "May not offer clear technical solutions for fixing the algorithmic bias itself." },
+                        deontology: { name: "Deontology", question: "Does this system violate any fundamental rights or duties?", keywords: ['duty', 'right', 'respect'], color: 'red', strength: "Provides a strong argument for why biased systems are inherently wrong, regardless of their efficiency.", weakness: "Can be inflexible when faced with complex systems where perfect fairness is statistically difficult to achieve." },
+                        consequentialism: { name: "Consequentialism", question: "What are the overall societal consequences of using this AI?", keywords: ['harms', 'efficiency', 'impact', 'benefits'], color: 'green', strength: "Clearly highlights the widespread, measurable harm the algorithm can cause to groups and society.", weakness: "Might permit a 'small' amount of bias if the overall efficiency gains are deemed large enough." },
+                        care: { name: "Care Ethics", question: "How does this system affect the most vulnerable stakeholders?", keywords: ['vulnerability', 'relationship', 'responsive', 'needs'], color: 'purple', strength: "Centers the voices and experiences of those who are negatively impacted by the technology.", weakness: "Can be challenging to apply to the millions of anonymous people affected by a large-scale algorithm." }
+                    },
+                    demonstration: {
+                        perceptionCheck: "My gut reaction is a sense of unfairness and alarm. This triggers the 'Fairness/Cheating' moral foundation. As a project manager, my standpoint gives me a feeling of responsibility and some shame that my project is causing harm. The problem feels urgent.",
+                        virtue: "An ethical project manager and a virtuous company would act with fairness, diligence, and integrity. Knowingly using a biased tool, even for efficiency, reflects poorly on our character. The right action is to be transparent about the flaw and take responsibility for fixing it.",
+                        deontology: "The AI violates the fundamental duty to provide equal opportunity and the right of each candidate to be judged on their own merit. It treats female candidates as a means to an end (efficiency) and fails to respect their dignity. The principle of non-discrimination is paramount.",
+                        consequentialism: "The harm of perpetuating gender bias in the tech industry is significant and far-reaching, impacting diversity and reinforcing societal inequality. While the short-term cost of pulling the system is high, the long-term consequence of deploying a biased tool is far worse for the company's reputation and for society.",
+                        care: "This lens focuses on the vulnerability of the job applicants who are being unfairly disadvantaged. They are in a position of low power. A caring response requires us to be responsive to their needs and protect them from a system that is actively harming their prospects.",
+                        alignment: "All lenses agree that leaving the biased AI active is unethical. They converge on the need to stop the harm, even if they prioritize different reasons (character, rights, outcomes, or vulnerability).",
+                        tension: "The tension is between the immediate consequentialist harm to the company (delays, costs) and the deontological duty to stop a discriminatory practice. There is no option that avoids all negative consequences.",
+                        integration: "An integrated approach would be to immediately halt the AI's autonomous decision-making. All hiring decisions should revert to human reviewers, but they can still use the AI as a tool to organize applications. This stops the immediate harm while retaining some efficiency gains. Simultaneously, I would recommend a transparent, all-hands effort to audit and rebuild the algorithm with fairness as a primary metric.",
+                        constructorSolution: "We create a new 'Human-in-the-Loop' system. The AI can still screen and rank, but any candidate from an underrepresented group who is rejected by the AI is automatically flagged for a mandatory human review. This preserves efficiency for the majority of applicants while creating a targeted safeguard that addresses the specific bias we've identified. This is a new system that is both fast and fair."
+                    }
+                },
+                 socialMediaSpeech: {
+                    title: "Social Media & Free Speech (Challenge)",
+                    simulatorText: "A student at your college secretly records a professor making controversial remarks in class. The student uploads the video, and it quickly goes viral, leading to online outrage and the professor's suspension. This case study explores the tension between free speech, privacy, and the responsibilities of community members in a digital age.",
+                    labText: "A student at your college secretly records a professor making politically controversial remarks in class—comments the professor believes were part of an open, academic discussion. The student uploads a short, edited clip of the video, and it quickly goes viral. Online outrage erupts, the professor is suspended, and students across campus are divided. You are on a campus task force evaluating how to respond and what policies to create for the future.",
+                    constructorPrompt: "The debate is framed as 'free speech vs. safety.' A constructor approach asks: How can we design a campus environment that fosters both intellectual bravery AND genuine inclusion? Brainstorm new systems. Could you create a student-led restorative justice process for classroom conflicts? Could you develop a 'digital literacy' program that teaches students how to engage with controversial content constructively?",
+                    lenses: { /* Lenses data can be added for the simulator */ }
+                    // No 'demonstration' object for this case
+                },
+                aiHiringChallenge: {
+                    title: "AI Hiring System (Challenge)",
+                    simulatorText: "A college ethics committee is evaluating whether to adopt a new AI hiring system for campus jobs. The system promises to screen applications faster and more 'objectively,' but some are concerned it could amplify hidden biases from past data, reducing human empathy and discretion in hiring.",
+                    labText: "You are on a college ethics committee tasked with evaluating whether to adopt a new AI-based hiring system for campus job recruitment. The system promises to screen applications faster and eliminate human bias by using data-driven algorithms. However, some faculty and student groups are concerned it will amplify hidden biases in the data and reduce human empathy. You must recommend whether to adopt, reject, or modify the proposal.",
+                    constructorPrompt: "The choice isn't just 'adopt the AI' or 'reject the AI.' A constructor approach asks: How can we design a hiring system that uses technology to enhance fairness, not just efficiency? Brainstorm new models. Could the AI be used to 'blind' applications by removing names and demographic data for human reviewers? Could it be designed to flag highly qualified candidates from non-traditional backgrounds for a second look?",
+                    lenses: { /* ... */ }
+                    // No 'demonstration' object for this case
+                }
+            };
+
+            // --- NAVIGATION & MODAL ---
+            function switchView(viewId) { views.forEach(view => view.classList.remove('active')); document.getElementById(viewId)?.classList.add('active'); navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewId)); }
+            navButtons.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
+            settingsBtn.addEventListener('click', () => apiKeyModal.classList.add('active'));
+            apiKeyModal.addEventListener('click', (e) => { if (e.target === apiKeyModal || e.target.closest('.modal-close-btn')) { apiKeyModal.classList.remove('active'); } });
+            saveApiKeyBtn.addEventListener('click', () => { localStorage.setItem('geminiApiKey', apiKeyInput.value.trim()); apiKeyModal.classList.remove('active'); });
+            
+            function showConfirmModal(message, onConfirm) {
+                document.getElementById('confirm-modal-message').textContent = message;
+                confirmModal.classList.add('active');
+                const confirmOkBtn = document.getElementById('confirm-ok-btn');
+                const newOkBtn = confirmOkBtn.cloneNode(true);
+                confirmOkBtn.parentNode.replaceChild(newOkBtn, confirmOkBtn);
+                newOkBtn.addEventListener('click', () => {
+                    onConfirm();
+                    confirmModal.classList.remove('active');
+                }, { once: true });
+
+                const cancelBtn = document.getElementById('confirm-cancel-btn');
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                newCancelBtn.addEventListener('click', () => {
+                     confirmModal.classList.remove('active');
+                }, { once: true });
+
+                confirmModal.addEventListener('click', (e) => {
+                     if (e.target === confirmModal) {
+                        confirmModal.classList.remove('active');
+                    }
+                }, { once: true });
+            }
+
+            // --- GEMINI API CALL ---
+            async function callGeminiAPI(prompt, resultElement) {
+                const userApiKey = localStorage.getItem('geminiApiKey');
+                if (!userApiKey) { resultElement.innerHTML = `<div class="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg"><h3 class="font-bold">API Key Required</h3><p>Please add your Google AI API key in the settings (gear icon in the top right).</p></div>`; apiKeyModal.classList.add('active'); return null; }
+                resultElement.innerHTML = '<div class="loader"></div>';
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${userApiKey}`;
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                try {
+                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(`API Error: ${errorData.error.message || response.statusText}`); }
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        const text = data.candidates[0].content.parts[0].text;
+                        const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>').replace(/\n/g, '<br>');
+                        resultElement.innerHTML = `<div class="prose max-w-none p-4 bg-gray-50 rounded-lg border border-gray-200">${formattedText}</div>`;
+                    } else { throw new Error("No content received from API."); }
+                } catch (error) { console.error("Gemini API call failed:", error); resultElement.innerHTML = `<div class="text-red-600 font-semibold p-4 bg-red-100 rounded-lg"><strong>Error:</strong> ${error.message}</div>`; }
+            }
+
+            // --- AI TUTOR LOGIC ---
+            let aiChatHistoryData = [];
+            aiTutorButton.addEventListener('click', () => {
+                aiTutorModal.classList.add('active');
+                if (aiChatHistoryData.length === 0) {
+                    appendChatMessage("Hello! I'm your AI Tutor. Ask me anything about the concepts on this page, and I'll do my best to help.", 'ai');
+                }
+            });
+            aiTutorModal.addEventListener('click', (e) => { if (e.target === aiTutorModal) { aiTutorModal.classList.remove('active'); } });
+            aiTutorSendBtn.addEventListener('click', handleTutorQuery);
+            aiTutorInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleTutorQuery(); });
+
+            function appendChatMessage(message, sender) {
+                aiChatHistoryData.push({message, sender});
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('mb-2', 'p-2', 'rounded-lg', 'max-w-[80%]');
+                if (sender === 'user') {
+                    messageDiv.classList.add('bg-blue-100', 'self-end', 'ml-auto');
+                    messageDiv.textContent = message;
+                } else {
+                    messageDiv.classList.add('bg-gray-200', 'self-start');
+                    messageDiv.innerHTML = message; // Use innerHTML to render bold tags
+                }
+                aiChatHistory.appendChild(messageDiv);
+                aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+            }
+
+            async function handleTutorQuery() {
+                const userQuery = aiTutorInput.value.trim();
+                if (!userQuery) return;
+
+                appendChatMessage(userQuery, 'user');
+                aiTutorInput.value = '';
+                
+                const context = getCurrentAppContext();
+                const prompt = `
+                    You are an AI Tutor for an ethics course. Your knowledge is grounded in the provided texts by Robert Mertzman.
+                    The user is currently on the "${context.moduleName}" module of the "Ethical Navigator" app.
+                    
+                    Here is the user's question: "${userQuery}"
+
+                    Your task is to provide a two-part response:
+                    1.  **Contextual Answer:** First, answer the user's question directly and concisely, focusing ONLY on how the concept applies within the context of the "${context.moduleName}" module.
+                    2.  **Invitation:** After your contextual answer, add the following invitation on a new line: "If you'd like, ask me how this connects to the other modules or concepts in the toolkit."
+                    
+                    Be helpful, Socratic, and always guide the student back to the core concepts of the course (BROA, PRF, SAGE, Moral Foundations, etc.).
+                `;
+
+                appendChatMessage('<div class="loader !w-6 !h-6 !border-2 !mx-0"></div>', 'ai');
+                
+                const userApiKey = localStorage.getItem('geminiApiKey');
+                if (!userApiKey) { 
+                    aiChatHistory.lastChild.innerHTML = `<div class="text-red-600 font-semibold p-2 bg-red-100 rounded-lg"><strong>Error:</strong> API Key required. Please add it in the settings.</div>`;
+                    apiKeyModal.classList.add('active');
+                    return;
+                }
+
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${userApiKey}`;
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                try {
+                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(`API Error: ${errorData.error.message || response.statusText}`); }
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        const text = data.candidates[0].content.parts[0].text;
+                        const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                        aiChatHistory.lastChild.innerHTML = formattedText;
+                        aiChatHistoryData[aiChatHistoryData.length - 1].message = formattedText;
+                    } else { throw new Error("No content received from API."); }
+                } catch (error) { 
+                    console.error("AI Tutor call failed:", error); 
+                    const errorMessage = `<div class="text-red-600 font-semibold p-2 bg-red-100 rounded-lg"><strong>Error:</strong> ${error.message}</div>`;
+                    aiChatHistory.lastChild.innerHTML = errorMessage;
+                    aiChatHistoryData[aiChatHistoryData.length - 1].message = errorMessage;
+                }
+            }
+
+            function getCurrentAppContext() {
+                const activeView = document.querySelector('.view.active');
+                if (!activeView) return { moduleName: "General" };
+                switch (activeView.id) {
+                    case 'foundations-view': return { moduleName: "Foundations" };
+                    case 'simulator-view': return { moduleName: "Filter Simulator" };
+                    case 'lab-view': return { moduleName: "Triangulation Lab" };
+                    case 'sandbox-view': return { moduleName: "Constructor Sandbox" };
+                    case 'toolkit-view': return { moduleName: "Reasoning Toolkit" };
+                    default: return { moduleName: "General" };
+                }
+            }
+
+            // --- MODULE 0: FOUNDATIONS ---
+            class FoundationsModule {
+                constructor(container) { this.container = container; this.init(); }
+                init() {
+                    this.container.innerHTML = `
+                        <div class="text-center mb-8">
+                            <button id="start-here-btn" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105">
+                                Start Here: Read First
+                            </button>
+                        </div>
+                        <div class="space-y-8">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800 mb-3">Core Concepts: The Foundations of Ethical Navigation</h2>
+                                <p class="text-lg text-gray-600">This toolkit is built on a few key ideas. Understanding them will help you get the most out of the simulator and labs. The main goal is not to agree on everything, but to build your **capability** to coordinate with others who see the world differently.</p>
+                            </div>
+                            <!-- BROA Filter -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-2">The BROA Filter: How You See the World</h3>
+                                <p class="text-gray-700 mb-4">Your Personal Reality Framework (PRF) creates a filter to make sense of the world efficiently. This filter, called **BROA**, can limit our perspective. Understanding your filter—and recognizing others have different ones—is the first step to better ethical coordination.</p>
+                                <div class="space-y-2" id="broa-accordion">
+                                    ${this.createAccordionItem('B', 'Beliefs', 'What do I assume is true? These are your conscious and unconscious assumptions about how the world works.')}
+                                    ${this.createAccordionItem('R', 'Rules', 'What rules (social, moral, legal) are active here? These guide your sense of what you "should" or "must" do.')}
+                                    ${this.createAccordionItem('O', 'Ontology', 'What kind of thing is this? A threat, an opportunity, a person, an object? This shapes your fundamental reaction.')}
+                                    ${this.createAccordionItem('A', 'Authenticity', 'Does this align with my core identity? This is your gut check, your sense of personal integrity.')}
+                                </div>
+                            </div>
+                            <!-- Moral Foundations -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-2">Moral Foundations Theory: Why We Disagree</h3>
+                                <p class="text-gray-700 mb-4">People's BROA filters are shaped by deep-seated moral values. We all share them, but we prioritize them differently, which can lead to intense disagreement. Recognizing these foundations helps build dialogue.</p>
+                                <div class="space-y-2" id="mft-accordion">
+                                    ${this.createAccordionItem('Care/Harm', 'Care/Harm', 'This foundation is based on our evolution as mammals with attachment systems. It underlies virtues of kindness, gentleness, and nurturance.')}
+                                    ${this.createAccordionItem('Fairness/Cheating', 'Fairness/Cheating', 'This is related to the evolutionary process of reciprocal altruism. It generates ideas of justice, rights, and autonomy.')}
+                                    ${this.createAccordionItem('Loyalty/Betrayal', 'Loyalty/Betrayal', 'This foundation is based on our long history as tribal creatures. It underlies virtues of patriotism and self-sacrifice for the group.')}
+                                    ${this.createAccordionItem('Authority/Subversion', 'Authority/Subversion', 'This is shaped by our primate history of hierarchical social interactions. It underlies virtues of leadership and followership, including deference to legitimate authority and respect for traditions.')}
+                                    ${this.createAccordionItem('Sanctity/Degradation', 'Sanctity/Degradation', 'This foundation was shaped by the psychology of disgust and contamination. It underlies religious notions of striving to live in an elevated, less carnal, more noble way.')}
+                                    ${this.createAccordionItem('Liberty/Oppression', 'Liberty/Oppression', 'This foundation is about the feelings of reactance and resentment people feel toward those who dominate them and restrict their liberty.')}
+                                </div>
+                            </div>
+                             <!-- Standpoint Theory -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-2">Standpoint: Where You See From Matters</h3>
+                                <p class="text-gray-700 mb-4">Your position in the world—your lived experience, social identity, and structural position—shapes what you see as ethically important. Recognizing your own standpoint and listening to others' is a key skill for ethical navigation.</p>
+                            </div>
+                        </div>
+                    `;
+                    this.addAccordionListeners();
+                    this.container.querySelector('#start-here-btn').addEventListener('click', () => startHereModal.classList.add('active'));
+                    startHereModal.addEventListener('click', (e) => { if (e.target === startHereModal || e.target.closest('.modal-close-btn')) { startHereModal.classList.remove('active'); } });
+                }
+                createAccordionItem(letter, title, content) {
+                    return `
+                        <div class="border border-gray-200 rounded-lg">
+                            <button class="accordion-toggle w-full flex items-center justify-between p-4 text-left">
+                                <span class="text-xl font-bold text-blue-600 mr-4">${letter}</span>
+                                <span class="text-lg font-semibold flex-1">${title}</span>
+                                <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="accordion-content px-4 pb-4 text-gray-600"><p>${content}</p></div>
+                        </div>`;
+                }
+                addAccordionListeners() {
+                    this.container.querySelectorAll('.accordion-toggle').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const content = button.nextElementSibling;
+                            const icon = button.querySelector('svg');
+                            if (content.style.maxHeight) {
+                                content.style.maxHeight = null;
+                                icon.classList.remove('rotate-180');
+                            } else {
+                                content.style.maxHeight = content.scrollHeight + "px";
+                                icon.classList.add('rotate-180');
+                            }
+                        });
+                    });
+                }
+            }
+
+            // --- MODULE 1: FILTER SIMULATOR ---
+            class FilterSimulator {
+                constructor(container) { this.container = container; this.currentCaseKey = 'animalWelfare'; this.init(); }
+                init() {
+                    this.container.innerHTML = `
+                        <div class="mb-6"><label for="sim-case-selector" class="block text-lg font-semibold mb-2 text-gray-700">Choose a Scenario:</label><select id="sim-case-selector" class="w-full p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500"><option value="animalWelfare">Animal Welfare</option><option value="healthcareAccess">Healthcare Access</option><option value="aiBias">AI & Algorithmic Bias</option><option value="socialMediaSpeech">Social Media & Free Speech</option><option value="aiHiringChallenge">AI Hiring System</option></select></div>
+                        <div class="mb-8"><h2 id="sim-case-title" class="text-2xl font-semibold mb-3 text-gray-800"></h2><div id="sim-case-text" class="text-lg leading-relaxed text-gray-700 p-6 bg-gray-50 rounded-lg border border-gray-200"></div></div>
+                        <div class="mb-8"><h3 class="text-xl font-semibold text-center mb-4">Select an Ethical Lens to Apply:</h3><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><button class="lens-btn p-4 rounded-lg font-bold text-white transition-all duration-200 shadow-lg hover:shadow-xl bg-blue-500 hover:bg-blue-600" data-lens="virtue">Virtue Ethics</button><button class="lens-btn p-4 rounded-lg font-bold text-white transition-all duration-200 shadow-lg hover:shadow-xl bg-red-500 hover:bg-red-600" data-lens="deontology">Deontology</button><button class="lens-btn p-4 rounded-lg font-bold text-white transition-all duration-200 shadow-lg hover:shadow-xl bg-green-500 hover:bg-green-600" data-lens="consequentialism">Consequentialism</button><button class="lens-btn p-4 rounded-lg font-bold text-white transition-all duration-200 shadow-lg hover:shadow-xl bg-purple-500 hover:bg-purple-600" data-lens="care">Care Ethics</button></div></div>
+                        <div id="sim-explanation-area" class="min-h-[250px] p-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 transition-all duration-300"><p class="text-center text-gray-500">Click a lens above to see its core question and critical analysis.</p></div>`;
+                    this.addEventListeners(); this.loadCaseStudy(this.currentCaseKey);
+                }
+                addEventListeners() {
+                    this.container.querySelector('#sim-case-selector').addEventListener('change', (e) => this.loadCaseStudy(e.target.value));
+                    this.container.querySelectorAll('.lens-btn').forEach(btn => btn.addEventListener('click', (e) => this.handleLensClick(e)));
+                }
+                loadCaseStudy(key) {
+                    this.currentCaseKey = key; const caseData = caseStudies[key];
+                    this.container.querySelector('#sim-case-title').textContent = `Analysis of: ${caseData.title}`;
+                    this.container.querySelector('#sim-case-text').innerHTML = caseData.simulatorText;
+                    this.container.querySelectorAll('.lens-btn').forEach(btn => btn.classList.remove('active')); this.updateExplanation(null);
+                }
+                renderText(activeLens) {
+                    const caseData = caseStudies[this.currentCaseKey]; let textToRender = caseData.simulatorText;
+                    if (activeLens && caseData.lenses[activeLens]) { const keywords = caseData.lenses[activeLens].keywords; const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi'); textToRender = caseData.simulatorText.replace(regex, match => `<span class="highlight">${match}</span>`); }
+                    this.container.querySelector('#sim-case-text').innerHTML = textToRender;
+                }
+                updateExplanation(activeLens) {
+                    const caseData = caseStudies[this.currentCaseKey]; const explanationContainer = this.container.querySelector('#sim-explanation-area');
+                    if (activeLens && caseData.lenses[activeLens]) {
+                        const data = caseData.lenses[activeLens];
+                        explanationContainer.innerHTML = `<h3 class="text-2xl font-bold text-${data.color}-600 mb-2">${data.name}</h3><p class="text-lg italic text-gray-700 mb-4"><strong>Core Question:</strong> "${data.question}"</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"><div class="p-3 bg-green-50 border border-green-200 rounded-lg"><h4 class="font-bold text-green-800">Strength of this Lens:</h4><p class="text-green-900">${data.strength}</p></div><div class="p-3 bg-red-50 border border-red-200 rounded-lg"><h4 class="font-bold text-red-800">Weakness of this Lens:</h4><p class="text-red-900">${data.weakness}</p></div></div>`;
+                        explanationContainer.style.borderColor = `var(--tw-color-${data.color}-300)`;
+                    } else { explanationContainer.innerHTML = `<p class="text-center text-gray-500">Click a lens above to see its core question and critical analysis.</p>`; explanationContainer.style.borderColor = '#e5e7eb'; }
+                }
+                handleLensClick(event) {
+                    const clickedLens = event.target.dataset.lens; const btn = event.target; const isActive = btn.classList.contains('active');
+                    this.container.querySelectorAll('.lens-btn').forEach(b => b.classList.remove('active'));
+                    if (!isActive) { btn.classList.add('active'); }
+                    const activeLens = !isActive ? clickedLens : null; this.renderText(activeLens); this.updateExplanation(activeLens);
+                }
+            }
+
+            // --- MODULE 2: TRIANGULATION LAB ---
+            class TriangulationLab {
+                constructor(container) { this.container = container; this.currentCaseKey = 'animalWelfare'; this.storageKey = 'ethicalNavLabData'; this.init(); }
+                init() {
+                    this.container.innerHTML = `
+                        <div class="mb-6"><label for="lab-case-selector" class="block text-lg font-semibold mb-2 text-gray-700">Choose a Scenario to Analyze:</label><select id="lab-case-selector" class="w-full p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500"><option value="animalWelfare">Animal Welfare (with Demo)</option><option value="healthcareAccess">Healthcare Access (with Demo)</option><option value="aiBias">AI & Algorithmic Bias (with Demo)</option><option value="socialMediaSpeech">Social Media & Free Speech (Challenge)</option><option value="aiHiringChallenge">AI Hiring System (Challenge)</option></select></div>
+                        <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200"><h2 id="lab-case-title" class="text-2xl font-semibold mb-3 text-gray-800"></h2><p id="lab-case-text" class="text-lg leading-relaxed text-gray-700"></p></div>
+                        <div class="flex justify-center space-x-4 mb-8">
+                            <button id="demo-btn" class="bg-yellow-500 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-yellow-600 disabled:bg-gray-400 disabled:cursor-not-allowed">Show Demonstration</button>
+                            <button id="clear-btn" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-gray-600">Clear Worksheet</button>
+                        </div>
+                        
+                        <!-- Perception Check -->
+                        <div class="mb-8 p-6 bg-orange-50 rounded-lg border-2 border-orange-200 border-dashed">
+                             <h3 class="text-2xl font-bold text-orange-800 mb-3">Step 1: Perception Check</h3>
+                             <p class="mb-4 text-orange-900">Before formal analysis, capture your immediate gut reaction. What emotions do you feel? What moral foundations (e.g., Care, Fairness, Loyalty) are activated? How might your personal standpoint or BROA filter be shaping this initial perception?</p>
+                             <textarea data-field="perceptionCheck" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="My gut reaction is... This might be because..."></textarea>
+                        </div>
+
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3 text-center">Step 2: Triangulation Analysis</h3>
+                        <div class="space-y-6">
+                            <div><label class="block text-xl font-semibold mb-2 text-blue-600">Virtue Lens Analysis:</label><textarea data-field="virtue" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="Analyze the case through the Virtue Lens..."></textarea></div>
+                            <div><label class="block text-xl font-semibold mb-2 text-red-600">Duty Lens Analysis:</label><textarea data-field="deontology" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="Analyze the case through the Duty Lens..."></textarea></div>
+                            <div><label class="block text-xl font-semibold mb-2 text-green-600">Consequence Lens Analysis:</label><textarea data-field="consequentialism" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="Analyze the case through the Consequence Lens..."></textarea></div>
+                            <div><label class="block text-xl font-semibold mb-2 text-purple-600">Care Lens Analysis:</label><textarea data-field="care" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="Analyze the case through the Care Lens..."></textarea></div>
+                        </div>
+                        <hr class="my-8">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3 text-center">Step 3: Synthesis & Innovation</h3>
+                        <div class="space-y-6">
+                            <div><label class="block text-xl font-semibold mb-2 text-gray-700">Areas of Alignment:</label><textarea data-field="alignment" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="3" placeholder="Identify where the different lenses point to similar conclusions..."></textarea></div>
+                            <div><label class="block text-xl font-semibold mb-2 text-gray-700">Areas of Tension:</label><textarea data-field="tension" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="3" placeholder="Identify where the lenses conflict..."></textarea></div>
+                            <div><label class="block text-xl font-semibold mb-2 text-gray-700">Possible Integrated Approach:</label><textarea data-field="integration" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="Based on your analysis, describe a more comprehensive solution..."></textarea></div>
+                        </div>
+                        <hr class="my-8 border-dashed">
+                        <div class="mt-8 p-6 bg-indigo-50 rounded-lg border-2 border-indigo-200">
+                            <h3 class="text-2xl font-bold text-indigo-800">Ethical Innovation (Constructor Approach)</h3>
+                            <p id="constructor-prompt-text" class="mt-2 mb-4 text-indigo-700"></p>
+                            <textarea data-field="constructorSolution" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="5" placeholder="Brainstorm new, creative solutions here..."></textarea>
+                        </div>
+                        <div class="mt-8 text-center">
+                            <button id="get-feedback-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Get AI Feedback</button>
+                        </div>
+                        <div id="feedback-result-area" class="mt-8"></div>
+                    `;
+                    this.addEventListeners(); this.loadCaseStudy(this.currentCaseKey); this.checkWorksheetCompletion();
+                }
+                addEventListeners() {
+                    this.container.querySelector('#lab-case-selector').addEventListener('change', (e) => this.loadCaseStudy(e.target.value));
+                    this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                        textarea.addEventListener('input', (e) => { this.saveWork(e.target.dataset.field, e.target.value); this.checkWorksheetCompletion(); });
+                    });
+                    this.container.querySelector('#get-feedback-btn').addEventListener('click', () => this.getAIFeedback());
+                    this.container.querySelector('#demo-btn').addEventListener('click', () => this.fillDemonstration());
+                    this.container.querySelector('#clear-btn').addEventListener('click', () => this.clearWorksheet());
+                }
+                loadCaseStudy(key) {
+                    this.currentCaseKey = key; const caseData = caseStudies[key];
+                    this.container.querySelector('#lab-case-title').textContent = `Dilemma: ${caseData.title}`;
+                    this.container.querySelector('#lab-case-text').textContent = caseData.labText;
+                    this.container.querySelector('#constructor-prompt-text').textContent = caseData.constructorPrompt;
+                    this.container.querySelector('#feedback-result-area').innerHTML = '';
+                    const demoBtn = this.container.querySelector('#demo-btn');
+                    const hasDemo = !!caseData.demonstration;
+                    demoBtn.disabled = !hasDemo;
+                    demoBtn.title = hasDemo ? 'Show a completed example' : 'No demonstration available for this challenge case.';
+                    this.loadWork();
+                }
+                saveWork(field, value) {
+                    const allData = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
+                    if (!allData[this.currentCaseKey]) { allData[this.currentCaseKey] = {}; }
+                    allData[this.currentCaseKey][field] = value;
+                    localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                }
+                loadWork() {
+                    const allData = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
+                    const caseData = allData[this.currentCaseKey] || {};
+                    this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                        const field = textarea.dataset.field;
+                        textarea.value = caseData[field] || '';
+                    });
+                    this.checkWorksheetCompletion();
+                }
+                checkWorksheetCompletion() {
+                    const textareas = this.container.querySelectorAll('.worksheet-textarea');
+                    const isComplete = Array.from(textareas).some(ta => ta.value.trim() !== '');
+                    this.container.querySelector('#get-feedback-btn').disabled = !isComplete;
+                }
+                fillDemonstration() {
+                    const demoData = caseStudies[this.currentCaseKey].demonstration;
+                    if (!demoData) return;
+                    this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                        const field = textarea.dataset.field;
+                        if (demoData[field]) {
+                            textarea.value = demoData[field];
+                            this.saveWork(field, demoData[field]);
+                        }
+                    });
+                    this.checkWorksheetCompletion();
+                }
+                clearWorksheet() {
+                    showConfirmModal("Are you sure you want to clear all your work for this case study? This cannot be undone.", () => {
+                        this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                            textarea.value = '';
+                        });
+                        const allData = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
+                        if (allData[this.currentCaseKey]) {
+                            delete allData[this.currentCaseKey];
+                            localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                        }
+                        this.checkWorksheetCompletion();
+                        this.container.querySelector('#feedback-result-area').innerHTML = '';
+                    });
+                }
+                getAIFeedback() {
+                    const caseData = caseStudies[this.currentCaseKey];
+                    const studentWork = JSON.parse(localStorage.getItem(this.storageKey) || '{}')[this.currentCaseKey] || {};
+                    const prompt = `
+                        Act as a Socratic tutor providing feedback on a student's ethical analysis.
+                        The student was presented with the following dilemma: "${caseData.labText}"
+                        Here is the student's analysis:
+                        - Initial Perception: ${studentWork.perceptionCheck || "No input."}
+                        - Virtue Lens: ${studentWork.virtue || "No input."}
+                        - Duty Lens: ${studentWork.deontology || "No input."}
+                        - Consequence Lens: ${studentWork.consequentialism || "No input."}
+                        - Care Lens: ${studentWork.care || "No input."}
+                        - Alignment: ${studentWork.alignment || "No input."}
+                        - Tension: ${studentWork.tension || "No input."}
+                        - Integration: ${studentWork.integration || "No input."}
+                        - Constructor Ideas: ${studentWork.constructorSolution || "No input."}
+
+                        Your task is to provide constructive, non-judgmental feedback. Do NOT give a "correct" answer. Instead, help the student think more deeply. Start by acknowledging their perception check. Then, structure your feedback with the following sections:
+                        **What's Working Well:** Briefly praise one or two aspects of their analysis that are strong.
+                        **Areas for Deeper Reflection:** Ask 2-3 specific, probing questions that challenge their assumptions or encourage them to explore underdeveloped areas of their analysis.
+                        **Expanding Your Constructor Thinking:** Provide one question or idea to help them push their innovative solutions even further.
+                    `;
+                    const resultElement = this.container.querySelector('#feedback-result-area');
+                    callGeminiAPI(prompt, resultElement);
+                }
+            }
+            
+            // --- MODULE 3: CONSTRUCTOR SANDBOX ---
+            class ConstructorSandbox {
+                constructor(container) {
+                    this.container = container;
+                    this.currentCaseKey = 'healthcareAccess'; // Default to the one with a demo
+                    this.storageKey = 'ethicalNavSandboxData';
+                    this.init();
+                }
+
+                init() {
+                    this.container.innerHTML = `
+                        <div class="mb-6"><label for="sandbox-case-selector" class="block text-lg font-semibold mb-2 text-gray-700">Choose a Scenario to Innovate:</label><select id="sandbox-case-selector" class="w-full p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500"><option value="healthcareAccess">Healthcare Access (with Demo)</option><option value="animalWelfare">Animal Welfare (Challenge)</option><option value="aiBias">AI & Algorithmic Bias (Challenge)</option><option value="socialMediaSpeech">Social Media & Free Speech (Challenge)</option><option value="aiHiringChallenge">AI Hiring System (Challenge)</option></select></div>
+                        <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200"><h2 id="sandbox-case-title" class="text-2xl font-semibold mb-3 text-gray-800"></h2><p id="sandbox-case-text" class="text-lg leading-relaxed text-gray-700"></p></div>
+                        <div class="flex justify-center space-x-4 mb-8">
+                            <button id="sandbox-demo-btn" class="bg-yellow-500 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-yellow-600 disabled:bg-gray-400 disabled:cursor-not-allowed">Show Demonstration</button>
+                            <button id="sandbox-clear-btn" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-gray-600">Clear Worksheet</button>
+                        </div>
+                        <div class="space-y-8">
+                            <div><h3 class="text-2xl font-semibold mb-2 text-blue-600">S: See the System</h3><p class="mb-3 text-gray-600">Define the problem and identify all the stakeholders involved. What are the current rules and constraints of the system?</p><textarea data-field="see" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="e.g., The system requires a binary choice between two bad options..."></textarea></div>
+                            <div><h3 class="text-2xl font-semibold mb-2 text-red-600">A: Analyze Root Causes & Stakeholders</h3><p class="mb-3 text-gray-600">Identify all stakeholders involved. Who benefits from the current system, and who is harmed? Then, use the "Five Whys" technique to find the true root cause of the problem.</p><textarea data-field="analyze" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="5" placeholder="Stakeholders: [List them...]\nBeneficiaries/Harmed: [Analyze who wins/loses...]\nRoot Cause (5 Whys): Why does this problem exist? Because..."></textarea></div>
+                            <div><h3 class="text-2xl font-semibold mb-2 text-green-600">G: Generate New Possibilities</h3><p class="mb-3 text-gray-600">Brainstorm creative, "out-of-the-box" solutions that change the system itself. What new capabilities would stakeholders need to coordinate on a better solution?</p><textarea data-field="generate" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="5" placeholder="e.g., What if we didn't have a traditional hospital? What if we created a telemedicine hub..."></textarea></div>
+                            <div><h3 class="text-2xl font-semibold mb-2 text-purple-600">E: Engage & Evaluate</h3><p class="mb-3 text-gray-600">Design a pilot experiment for your best idea. How will you engage with it to see if it works as expected? Define what success looks like and how you would modify your approach or return to the design phase if it doesn't work.</p><textarea data-field="experiment" class="worksheet-textarea w-full p-3 border border-gray-300 rounded-lg" rows="4" placeholder="Pilot Idea: [Describe the small-scale test.]\nSuccess Metric: [How will you measure success?]\nContingency Plan: [If it doesn't work, what's the next step? Modify the idea or go back to brainstorming?]"></textarea></div>
+                        </div>
+                        <div class="mt-8 text-center">
+                            <button id="get-sandbox-feedback-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Get AI Design Coach Feedback</button>
+                        </div>
+                        <div id="sandbox-feedback-area" class="mt-8"></div>
+                    `;
+                    this.addEventListeners();
+                    this.loadCaseStudy(this.currentCaseKey);
+                }
+
+                addEventListeners() {
+                    this.container.querySelector('#sandbox-case-selector').addEventListener('change', (e) => this.loadCaseStudy(e.target.value));
+                    this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                        textarea.addEventListener('input', (e) => { this.saveWork(e.target.dataset.field, e.target.value); this.checkWorksheetCompletion(); });
+                    });
+                    this.container.querySelector('#get-sandbox-feedback-btn').addEventListener('click', () => this.getAIFeedback());
+                    this.container.querySelector('#sandbox-demo-btn').addEventListener('click', () => this.fillDemonstration());
+                    this.container.querySelector('#sandbox-clear-btn').addEventListener('click', () => this.clearWorksheet());
+                }
+
+                loadCaseStudy(key) {
+                    this.currentCaseKey = key;
+                    const caseData = caseStudies[key];
+                    this.container.querySelector('#sandbox-case-title').textContent = `Dilemma: ${caseData.title}`;
+                    this.container.querySelector('#sandbox-case-text').textContent = caseData.labText;
+                    this.container.querySelector('#sandbox-feedback-area').innerHTML = '';
+                    const demoBtn = this.container.querySelector('#sandbox-demo-btn');
+                    const hasDemo = !!caseData.sandboxDemonstration;
+                    demoBtn.disabled = !hasDemo;
+                    demoBtn.title = hasDemo ? 'Show a completed example' : 'No demonstration available for this challenge case.';
+                    this.loadWork();
+                }
+
+                fillDemonstration() {
+                    const demoData = caseStudies[this.currentCaseKey].sandboxDemonstration;
+                    if (!demoData) return;
+                    this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                        const field = textarea.dataset.field;
+                        if (demoData[field]) {
+                            textarea.value = demoData[field];
+                            this.saveWork(field, demoData[field]);
+                        }
+                    });
+                    this.checkWorksheetCompletion();
+                }
+
+                clearWorksheet() {
+                    showConfirmModal("Are you sure you want to clear your SAGE analysis for this case? This cannot be undone.", () => {
+                         this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                            textarea.value = '';
+                        });
+                        const allData = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
+                        if (allData[this.currentCaseKey]) {
+                            delete allData[this.currentCaseKey];
+                            localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                        }
+                        this.checkWorksheetCompletion();
+                        this.container.querySelector('#sandbox-feedback-area').innerHTML = '';
+                    });
+                }
+                 
+                saveWork(field, value) {
+                    const allData = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
+                    if (!allData[this.currentCaseKey]) { allData[this.currentCaseKey] = {}; }
+                    allData[this.currentCaseKey][field] = value;
+                    localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                }
+
+                loadWork() {
+                    const allData = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
+                    const caseData = allData[this.currentCaseKey] || {};
+                    this.container.querySelectorAll('.worksheet-textarea').forEach(textarea => {
+                        textarea.value = caseData[textarea.dataset.field] || '';
+                    });
+                    this.checkWorksheetCompletion();
+                }
+
+                checkWorksheetCompletion() {
+                    const isComplete = Array.from(this.container.querySelectorAll('.worksheet-textarea')).some(ta => ta.value.trim() !== '');
+                    this.container.querySelector('#get-sandbox-feedback-btn').disabled = !isComplete;
+                }
+
+                getAIFeedback() {
+                    const caseData = caseStudies[this.currentCaseKey];
+                    const studentWork = JSON.parse(localStorage.getItem(this.storageKey) || '{}')[this.currentCaseKey] || {};
+                    const prompt = `
+                        Act as an AI Design Coach providing feedback on a student's attempt to solve an ethical dilemma using the SAGE (See, Analyze, Generate, Experiment) method.
+                        The student was presented with the following dilemma: "${caseData.labText}"
+                        Here is the student's SAGE analysis:
+                        - See: ${studentWork.see || "No input."}
+                        - Analyze: ${studentWork.analyze || "No input."}
+                        - Generate: ${studentWork.generate || "No input."}
+                        - Experiment: ${studentWork.experiment || "No input."}
+
+                        Your task is to provide constructive feedback to help them improve their system design thinking.
+                        - **Praise:** Start by briefly praising one strong aspect of their analysis.
+                        - **Probe:** Ask 2-3 Socratic questions that challenge them to think more deeply about the system. For example, have they considered unintended consequences? Are their root causes deep enough? Is their experiment truly a low-risk test?
+                        - **Suggest:** Offer one "What if..." scenario to push their creative thinking even further.
+                    `;
+                    const resultElement = this.container.querySelector('#sandbox-feedback-area');
+                    callGeminiAPI(prompt, resultElement);
+                }
+            }
+            
+            // --- MODULE 4: REASONING TOOLKIT ---
+            class ReasoningToolkit {
+                constructor(container) {
+                    this.container = container;
+                    this.fallacies = [
+                        { name: 'Strawman', example: '"You want to regulate the tech industry? So you must hate innovation and progress!"', desc: 'Misrepresenting an argument to make it easier to attack.' },
+                        { name: 'False Dilemma', example: '"We can either approve this new surveillance system or let crime run rampant. There is no other choice."', desc: 'Presenting two options as the only possibilities.' },
+                        { name: 'Ad Hominem', example: '"You can\'t trust her opinion on climate change, she failed chemistry in high school."', desc: 'Attacking the person making the argument, not the argument itself.' },
+                        { name: 'Slippery Slope', example: '"If we allow students to retake one exam, soon they\'ll demand to retake every assignment and no one will learn anything."', desc: 'Arguing a single step will inevitably lead to a chain of negative events.' },
+                        { name: 'Appeal to Emotion', example: '"Think of the suffering children! We must pass this law, regardless of the details."', desc: 'Manipulating feelings instead of using a valid argument.' },
+                        { name: 'Appeal to Tradition', example: '"We have always done it this way, so it must be the right way."', desc: 'Arguing something is correct because it is old or traditional.' },
+                        { name: 'Red Herring', example: '"While the budget deficit is a concern, we should really be talking about the moral decay in our society."', desc: 'Changing the subject to divert attention from the real issue.' }
+                    ];
+                    this.currentFallacyIndex = 0;
+                    this.init();
+                }
+
+                init() {
+                    this.container.innerHTML = `
+                        <div class="space-y-12">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800 mb-3">The Reasoning Toolkit</h2>
+                                <p class="text-lg text-gray-600">Clear thinking is a skill. This toolkit helps you understand the building blocks of strong ethical arguments and spot common errors in reasoning—both in others and in yourself.</p>
+                            </div>
+
+                            <!-- Core Reasoning Types -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Core Reasoning Types</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                                        <h4 class="text-xl font-bold text-blue-800">Deduction</h4>
+                                        <p class="mt-2 text-blue-900">Starts with a general principle and applies it to a specific case. (General → Specific)</p>
+                                        <p class="mt-2 text-sm text-blue-700"><strong>Example:</strong> All humans have a right to dignity. Maria is a human. Therefore, Maria has a right to dignity.</p>
+                                        <p class="mt-2 text-sm font-semibold text-blue-800">Favored by: Deontology</p>
+                                    </div>
+                                    <div class="p-6 bg-green-50 border-2 border-green-200 rounded-lg">
+                                        <h4 class="text-xl font-bold text-green-800">Induction</h4>
+                                        <p class="mt-2 text-green-900">Draws a general conclusion from specific examples or patterns. (Specific → General)</p>
+                                        <p class="mt-2 text-sm text-green-700"><strong>Example:</strong> In the last five cases, this policy caused harm. Therefore, the policy is likely harmful.</p>
+                                        <p class="mt-2 text-sm font-semibold text-green-800">Favored by: Consequentialism, Virtue Ethics</p>
+                                    </div>
+                                    <div class="p-6 bg-purple-50 border-2 border-purple-200 rounded-lg">
+                                        <h4 class="text-xl font-bold text-purple-800">Abduction</h4>
+                                        <p class="mt-2 text-purple-900">Finds the most likely or meaningful explanation for a situation. (Inference to the Best Explanation)</p>
+                                        <p class="mt-2 text-sm text-purple-700"><strong>Example:</strong> The community is protesting. The new factory pollutes their water. The protest is likely about the pollution.</p>
+                                        <p class="mt-2 text-sm font-semibold text-purple-800">Favored by: Care Ethics</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- Reasoning with Emotion, Identity, and Context -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Reasoning with Emotion, Identity, and Context</h3>
+                                <div class="p-6 bg-gray-50 rounded-lg border space-y-6">
+                                    <p class="text-gray-700">Real ethical reasoning is not a sterile, purely logical process. It's shaped by who you are. Instead of ignoring these factors, a strong reasoner integrates them consciously. Try these reflective exercises:</p>
+                                    <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                        <h4 class="font-bold text-red-800">Activity: Emotion as a Spotlight</h4>
+                                        <p class="text-red-900 mb-3">Your feelings (anger, empathy, disgust) are not the enemy of reason; they are a spotlight telling you what matters. Consider the statement below:</p>
+                                        <p class="italic p-3 bg-white rounded-md">"It's outrageous that they're cutting funding for the arts program!"</p>
+                                        <label for="emotion-value" class="block font-semibold my-3">What core value might this emotion be trying to protect? (e.g., Creativity, Community, Education)</label>
+                                        <input type="text" id="emotion-value" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Type the value here...">
+                                        <button id="emotion-feedback-btn" class="mt-3 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Get Feedback</button>
+                                        <div id="emotion-feedback-area" class="mt-3"></div>
+                                    </div>
+                                    <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                        <h4 class="font-bold text-indigo-800">Activity: Identity as a Filter</h4>
+                                        <p class="text-indigo-900 mb-3">Your standpoint and life experiences shape what seems "reasonable." Consider the debate around student loan forgiveness. Briefly describe how these two standpoints might change what seems fair:</p>
+                                        <label for="identity-filter-1" class="block font-semibold my-3">1. A recent graduate with $100,000 in student debt:</label>
+                                        <textarea id="identity-filter-1" class="w-full p-2 border border-gray-300 rounded-md" rows="2" placeholder="From this standpoint, fairness might look like..."></textarea>
+                                        <label for="identity-filter-2" class="block font-semibold my-3">2. A taxpayer who paid off their loans years ago:</label>
+                                        <textarea id="identity-filter-2" class="w-full p-2 border border-gray-300 rounded-md" rows="2" placeholder="From this standpoint, fairness might look like..."></textarea>
+                                        <button id="identity-feedback-btn" class="mt-3 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Get Feedback</button>
+                                        <div id="identity-feedback-area" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Fallacy Spotter -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-2">Fallacy Spotter Mini-Game</h3>
+                                <p class="text-gray-600 mb-4">Fallacies are mistaken inferences. They are patterns of reasoning that might seem persuasive but are logically flawed. Test your ability to spot them!</p>
+                                <div id="fallacy-game-container" class="p-6 bg-gray-50 rounded-lg border"></div>
+                            </div>
+
+                            <!-- Bias Reflector -->
+                            <div>
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Cognitive Bias Reflector</h3>
+                                <p class="text-gray-600 mb-4">Our minds use mental shortcuts (biases) that can distort ethical reasoning. Click on each bias to see an example.</p>
+                                <div class="space-y-2" id="bias-accordion">
+                                    ${this.createBiasAccordionItem('Confirmation Bias', 'The tendency to search for, interpret, favor, and recall information that confirms one\'s prior beliefs.', '<strong>Example:</strong> A manager who believes men are better leaders might unconsciously pay more attention to the successes of male employees and the failures of female employees.')}
+                                    ${this.createBiasAccordionItem('In-group Bias', 'The tendency to favor members of one\'s own group over out-group members.', '<strong>Example:</strong> During a team project, a student might give a friend the benefit of the doubt on a missed deadline but judge a classmate they don\'t know harshly for the same mistake.')}
+                                    ${this.createBiasAccordionItem('Fundamental Attribution Error', 'The tendency to blame others\' behavior on their character while blaming our own behavior on external circumstances.', '<strong>Example:</strong> "He failed the test because he\'s lazy." vs. "I failed the test because the questions were unfair and I didn\'t sleep well."')}
+                                    ${this.createBiasAccordionItem('Status Quo Bias', 'A preference for the current state of affairs, viewing any change as a loss.', '<strong>Example:</strong> An organization might resist adopting a new, more equitable hiring process because they are comfortable with "the way we\'ve always done things," even if the old way is flawed.')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    this.renderFallacyGame();
+                    this.addBiasAccordionListeners();
+                    this.addReasoningFeedbackListeners();
+                }
+
+                createBiasAccordionItem(name, description, example) {
+                    return `
+                        <div class="border border-gray-200 rounded-lg">
+                            <button class="accordion-toggle w-full flex items-center justify-between p-4 text-left">
+                                <span class="text-lg font-semibold flex-1">${name}</span>
+                                <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="accordion-content px-4 pb-4 text-gray-600 space-y-2">
+                                <p>${description}</p>
+                                <p class="p-3 bg-gray-100 rounded-md">${example}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                addBiasAccordionListeners() {
+                    this.container.querySelectorAll('#bias-accordion .accordion-toggle').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const content = button.nextElementSibling;
+                            const icon = button.querySelector('svg');
+                            if (content.style.maxHeight) {
+                                content.style.maxHeight = null;
+                                icon.classList.remove('rotate-180');
+                            } else {
+                                content.style.maxHeight = content.scrollHeight + "px";
+                                icon.classList.add('rotate-180');
+                            }
+                        });
+                    });
+                }
+
+                addReasoningFeedbackListeners() {
+                    this.container.querySelector('#emotion-feedback-btn').addEventListener('click', () => {
+                        const input = this.container.querySelector('#emotion-value').value;
+                        if (!input) { alert('Please enter a value.'); return; }
+                        const prompt = `A student was asked to identify the core value being protected by the emotional statement: "It's outrageous that they're cutting funding for the arts program!" The student suggested the value is "${input}". Act as a tutor. Briefly affirm their answer if it's reasonable (like creativity, community, education) and then ask one Socratic question to get them to think more deeply about the connection between emotions and values.`;
+                        callGeminiAPI(prompt, this.container.querySelector('#emotion-feedback-area'));
+                    });
+
+                    this.container.querySelector('#identity-feedback-btn').addEventListener('click', () => {
+                        const input1 = this.container.querySelector('#identity-filter-1').value;
+                        const input2 = this.container.querySelector('#identity-filter-2').value;
+                        if (!input1 || !input2) { alert('Please fill out both standpoint descriptions.'); return; }
+                        const prompt = `A student is analyzing how standpoint affects perception of fairness regarding student loan forgiveness.
+                        - Standpoint 1 (Recent grad with debt): "${input1}"
+                        - Standpoint 2 (Taxpayer who paid off loans): "${input2}"
+                        Act as a tutor. Briefly affirm that they've captured the difference well. Then, ask one Socratic question to prompt them to think about how these two different, reasonable perspectives could be brought into a productive dialogue.`;
+                        callGeminiAPI(prompt, this.container.querySelector('#identity-feedback-area'));
+                    });
+                }
+
+                renderFallacyGame() {
+                    const gameContainer = this.container.querySelector('#fallacy-game-container');
+                    const fallacy = this.fallacies[this.currentFallacyIndex];
+                    const options = this.shuffle([...this.fallacies]).map(f => f.name);
+
+                    gameContainer.innerHTML = `
+                        <p class="text-lg italic text-gray-800 mb-4">" ${fallacy.example} "</p>
+                        <p class="mb-4 font-semibold">Which fallacy is this an example of?</p>
+                        <div id="fallacy-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            ${options.map(opt => `<button class="fallacy-option-btn p-3 border rounded-lg font-semibold bg-white hover:bg-gray-100" data-option="${opt}">${opt}</button>`).join('')}
+                        </div>
+                        <div id="fallacy-feedback" class="mt-4"></div>
+                        <button id="next-fallacy-btn" class="hidden mt-4 bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg">Next</button>
+                    `;
+                    this.addFallacyListeners();
+                }
+
+                addFallacyListeners() {
+                    this.container.querySelectorAll('.fallacy-option-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => this.checkFallacyAnswer(e));
+                    });
+                    this.container.querySelector('#next-fallacy-btn').addEventListener('click', () => this.nextFallacy());
+                }
+
+                checkFallacyAnswer(event) {
+                    const selectedOption = event.target.dataset.option;
+                    const correctOption = this.fallacies[this.currentFallacyIndex].name;
+                    const feedbackEl = this.container.querySelector('#fallacy-feedback');
+                    const nextBtn = this.container.querySelector('#next-fallacy-btn');
+
+                    this.container.querySelectorAll('.fallacy-option-btn').forEach(btn => {
+                        btn.disabled = true;
+                        if (btn.dataset.option === correctOption) {
+                            btn.classList.add('correct');
+                        }
+                    });
+
+                    if (selectedOption === correctOption) {
+                        feedbackEl.innerHTML = `<p class="text-green-700 font-semibold">Correct! This is an example of ${correctOption}.</p><p class="text-gray-600 mt-1">${this.fallacies[this.currentFallacyIndex].desc}</p>`;
+                    } else {
+                        event.target.classList.add('incorrect');
+                        feedbackEl.innerHTML = `<p class="text-red-700 font-semibold">Not quite. This is an example of ${correctOption}.</p><p class="text-gray-600 mt-1">${this.fallacies[this.currentFallacyIndex].desc}</p>`;
+                    }
+                    nextBtn.classList.remove('hidden');
+                }
+
+                nextFallacy() {
+                    this.currentFallacyIndex = (this.currentFallacyIndex + 1) % this.fallacies.length;
+                    this.renderFallacyGame();
+                }
+
+                shuffle(array) {
+                    for (let i = array.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [array[i], array[j]] = [array[j], array[i]];
+                    }
+                    return array;
+                }
+            }
+            
+            new FoundationsModule(foundationsView);
+            new FilterSimulator(simulatorView);
+            new TriangulationLab(labView);
+            new ConstructorSandbox(sandboxView);
+            new ReasoningToolkit(toolkitView);
+            switchView('foundations-view');
+        });
+    </script>
+</body>
+</html>
